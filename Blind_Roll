@@ -1,0 +1,38 @@
+on("chat:message", function(msg_orig) {
+    "use strict";
+    var msg = _.clone(msg_orig), who;
+
+    if (msg.type !== "api") {
+        return;
+    }
+
+    if(_.has(msg,'inlinerolls')){
+        msg.content = _.chain(msg.inlinerolls)
+        .reduce(function(m,v,k){
+            m['$[['+k+']]']=v.results.total || 0;
+            return m;
+        },{})
+        .reduce(function(m,v,k){
+            return m.replace(k,v);
+        },msg.content)
+        .value();
+    }
+
+    who=getObj('player',msg.playerid).get('_displayname').split(' ')[0];
+
+    var cmdName = "!broll ";
+    var msgTxt = msg.content;
+    var msgWho = msg.who;
+    var msgFormula = msgTxt.slice(cmdName.length);
+
+
+    if(msg.type == "api" && msgTxt.indexOf(cmdName) !== -1) {
+        if(_.has(msg,'rolltemplate')) {
+            sendChat(msgWho,'/w gm &{template:'+msg.rolltemplate+'}'+msg.content);
+            /* sendChat(msgWho, "/w " + who + " secret roll"); */
+        } else {
+            sendChat(msgWho, "/gmroll " + msgFormula);
+            sendChat(msgWho, "/w " + who + " secret roll sent to GM (" + msgFormula + ")");
+        }
+    };
+});
